@@ -5,3 +5,6 @@ cudatoolkit
 numpy
 opencv
 matplotlib
+wandb
+tqdm
+skorch
