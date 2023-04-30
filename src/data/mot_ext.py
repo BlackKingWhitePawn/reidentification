@@ -1,23 +1,25 @@
 """
 Содержит классы для загрузки данных MOT20_ext, преобразованных из MOT20 dataset
 MOT20_ext data format:
-test:
+train:
 |
 |- <video_id> // директория, содержащая объекты, вырезанные из соответствующего видео
     |
+    |- det
+    |   |
+    |   |- det.txt // файл описания детекций, хранящий строки в формате <frame number>, <object id>, <bb_left>, <bb_top>, <bb_width>, <bb_height>, <confidence>, <x>, <y>, <z>
+    |
+    |- gt
+    |   |
+    |   |- gt.txt // файл описания ground truth, хранящий строки в формате <frame number>, <object id>, <bb_left>, <bb_top>, <bb_width>, <bb_height>, <is_consider>, <class>, <visibility>
+    |
     |- <object_id> // директория, содержащая изображения вырезанных объектов и файл описания
         |
-        |- det
-        |   |
-        |   |- det.txt // файл описания, хранящий строки в формате <frame number>, <object id>, <bb_left>, <bb_top>, <bb_width>, <bb_height>, <confidence>, <x>, <y>, <z>
         |
-        |- img1 // директория с изображениями
-            |
-            .
-            .
-            .
-            |- <frame_id>.jpg - вырезанная из кадра frame_id область с объектом object_id
-
+        .
+        .
+        .
+        |- <frame_id>.jpg - вырезанная из кадра frame_id область с объектом object_id
 """
 
 from torch.utils.data import Dataset
@@ -46,7 +48,7 @@ class MOT20ExtDataset(Dataset):
         self.vid_path = vid_path
 
     def __len__(self) -> int:
-        object_dirs = listdir(join('data', 'mot20_ext', self.vid_path))
+        object_dirs = listdir(self.vid_path)
         object_frames_counts = [len(x) for x in object_dirs]
         return
         # for object_dir in listdir(join('data', 'mot20_ext', self.vid_path)):

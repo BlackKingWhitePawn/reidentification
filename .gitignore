@@ -1,8 +1,15 @@
+# workspace
+.ipynb_checkpoints/
+.vscode/
+__pycache__
+
+# data
 /temp/
 /data/
 /models/
 /media/
-.ipynb_checkpoints/
-.vscode/
-__pycache__
 *.zip
+
+# debug
+*.test.ipynb
+test.py
