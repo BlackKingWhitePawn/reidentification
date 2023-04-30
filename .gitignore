@@ -11,5 +11,4 @@ __pycache__
 *.zip
 
 # debug
-*.test.ipynb
 test.py

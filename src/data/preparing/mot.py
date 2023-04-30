@@ -62,8 +62,10 @@ def extract_video(mot20_video_path: str, mot20_video_ext_path: str) -> None:
         mkdir(join(mot20_video_ext_path, str(id)))
     # проходим по всем кадрам видео
     for frame in persons['frame'].unique():
-        extract_objects_from_frame(
-            join(mot20_video_path, ''), persons[persons['frame'] == frame])
+        objects = extract_objects_from_frame(
+            join(
+                mot20_video_path, 'img1', f'{str.zfill(str(frame), 6)}.jpg'), persons[persons['frame'] == frame])
+        save_objects(mot20_video_ext_path, objects)
 
 
 def get_dataframe(video_path: str, file_type: str = 'det') -> pd.DataFrame:
