@@ -22,13 +22,16 @@ train:
         |- <frame_id>.jpg - вырезанная из кадра frame_id область с объектом object_id
 """
 
-from torch.utils.data import Dataset
-from os.path import join
 from os import listdir
-from tqdm import tqdm
+from os.path import join
+
 import cv2
-import pandas as pd
 import numpy as np
+import pandas as pd
+from torch.utils.data import Dataset as Dataset
+from tqdm import tqdm as tqdm
+
+from .preparing.mot import get_dataframe
 
 
 class MOT20ExtDataset(Dataset):
@@ -37,29 +40,38 @@ class MOT20ExtDataset(Dataset):
     Возвращает пары изображений и метку: 1, если на изображении один и тот же объект, иначе 0 
     """
 
-    def __init__(self, vid_path: str) -> None:
+    def __init__(
+        self,
+            video_path: str,
+            transform=None,
+            visibility_threshold: float = 1,
+            frame_distance: int | list[int] | tuple[int, int] = 1,
+    ) -> None:
         """
         ### Parameters:
-        - vid_path: str
-
-            путь до директории, содержащей объекты, вырезанные из видео MOT20
+        - video_path: str - путь до директории с видео датасета МОТ20_ехт. Ожидается, что в директории находятся файлы описаний и ground truth
+        - transform - применяемые аугментации
+        - visibility_threshold: float - порог видимости (поле visibility) объекта, используемого в обучении
+        - frame_distance: int | list[int] | tuple[int, int] - допустимое расстояние между кадрами, объекты из которых используются в обучении
         """
         super(MOT20ExtDataset).__init__()
-        self.vid_path = vid_path
+        self.video_path = video_path
+        self.visibility_threshold = visibility_threshold
+        self.frame_distance = frame_distance
+        self.detections = get_dataframe(video_path, file_type='det')
+        df = get_dataframe(video_path, file_type='gt')
+        # берем объекты которые стоит учитывать при обучении
+        df = df[df['is_consider'] == 1]
+        # выбираем с видимостью выше заданной
+        df = df[df['visibility'] >= visibility_threshold]
+        self.ground_truth = df
 
     def __len__(self) -> int:
-        object_dirs = listdir(self.vid_path)
-        object_frames_counts = [len(x) for x in object_dirs]
-        return
-        # for object_dir in listdir(join('data', 'mot20_ext', self.vid_path)):
-        #     print(object_dir)
+        if (type(self.frame_distance) == int):
+            if (self.frame_distance < 1):
+                raise ValueError(
+                    'Distance between frames must be positive integer')
 
-    def __getitem__(self, idx) -> tuple[cv2.Mat, cv2.Mat, int]:
-        # image_path = self.paths[idx]
-        image = cv2.imread(image_path)
-        return (image, image, 0)
-        # if self.transform:
-        #     image = self.transform(image=image)['image']
-
-
-MOT20ExtDataset()
+    def __getitem__(self, idx: int) -> tuple[cv2.Mat, cv2.Mat, int]:
+        """Возвращает два изображения и метку: 1, если на изображении один и тот же объект, иначе 0"""
+        pass

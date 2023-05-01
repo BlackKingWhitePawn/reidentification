@@ -1,8 +1,9 @@
-from data.mot import MOT20Dataset, MOT20Object
-from config import *
-from os.path import exists, join, isdir
-from data.preparing.mot import run as run_mot20_extracting
+from os.path import exists, isdir, join
 from shutil import rmtree
+
+from config import *
+from data import MOT20Dataset, MOT20ExtDataset, MOT20Object
+from data.preparing import run as run_mot20_extracting
 
 
 def main():
