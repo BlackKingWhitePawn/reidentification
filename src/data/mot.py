@@ -1,11 +1,14 @@
-from torch.utils.data import Dataset
 import os
 from os.path import join
-from tqdm import tqdm
+
 import cv2
-import pandas as pd
 import numpy as np
+import pandas as pd
+from torch.utils.data import Dataset
+from tqdm import tqdm
+
 from data.person import Person
+from preparing.mot import DET_COLUMNS, DET_TYPES, GT_COLUMNS, GT_TYPES
 
 
 class MOT20Dataset(Dataset):
