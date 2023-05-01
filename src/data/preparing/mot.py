@@ -24,6 +24,8 @@ train:
 from os import listdir, mkdir
 from os.path import exists, join, isdir
 import pandas as pd
+from PIL import Image
+from tqdm import tqdm
 
 
 def save_objects(video_path: str, objects: list[any]) -> None:
@@ -36,14 +38,24 @@ def save_objects(video_path: str, objects: list[any]) -> None:
     pass
 
 
-def extract_objects_from_frame(frame: str, data: pd.DataFrame) -> list[any]:
-    """Извлекает все объекты из кадра.
-    Возвращает список 
+def get_file_name_by_id(frame_id: int) -> str:
+    return f'{str.zfill(str(frame_id), 6)}.jpg'
+
+
+def extract_objects_from_frame(video_path: str, frame: str, data: pd.DataFrame) -> None:
+    """Извлекает все объекты из кадра. Сохраняет список вырезанных объектов в соответствующие директории
     ### Parameters:
+    - video_path: str - путь до директории с текущим видео
     - frame: str - путь до изображения, из которого вырезаются объекты
-    - data: pandas.DataFrame - датафрейм с данными объектов
+    - data: pandas.DataFrame - датафрейм с данными объектов на данном изображении
     """
-    pass
+    current_image = Image.open(frame)
+    objects_to_crop = data.to_dict('records')
+    for obj in objects_to_crop:
+        x, y, w, h = obj['bb_left'], obj['bb_top'], obj['bb_width'], obj['bb_height']
+        img = current_image.crop(box=(x, y, x + w, y + h))
+        img.save(join(video_path, str(
+            int(obj['id'])), get_file_name_by_id(obj['frame'])))
 
 
 def extract_video(mot20_video_path: str, mot20_video_ext_path: str) -> None:
@@ -61,11 +73,14 @@ def extract_video(mot20_video_path: str, mot20_video_ext_path: str) -> None:
     for id in persons['id'].unique():
         mkdir(join(mot20_video_ext_path, str(id)))
     # проходим по всем кадрам видео
-    for frame in persons['frame'].unique():
-        objects = extract_objects_from_frame(
+    for frame in tqdm(persons['frame'].unique()):
+        extract_objects_from_frame(
+            mot20_video_ext_path,
             join(
-                mot20_video_path, 'img1', f'{str.zfill(str(frame), 6)}.jpg'), persons[persons['frame'] == frame])
-        save_objects(mot20_video_ext_path, objects)
+                mot20_video_path, 'img1', f'{str.zfill(str(frame), 6)}.jpg'),
+            persons[persons['frame'] == frame]
+        )
+        # save_objects(mot20_video_ext_path, objects)
 
 
 def get_dataframe(video_path: str, file_type: str = 'det') -> pd.DataFrame:
