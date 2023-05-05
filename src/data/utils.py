@@ -58,7 +58,7 @@ def split_to_continuous_segments(array_numbers: list[int]) -> list[list[int]]:
         return functools.reduce(__aggregate_to_continious, sorted(array_numbers))
 
 
-def _get_possible_tuples(distance: int, segment: list[int]) -> list[tuple[int, int]]:
+def __get_possible_tuples(distance: int, segment: list[int]) -> list[tuple[int, int]]:
     end = max(len(segment) - distance - 1, 0)
     return [(i, i + distance + 1) for i in range(segment[0], segment[end])]
 
@@ -72,7 +72,7 @@ def get_possible_tuples(distance: int, segments: list[list[int]]) -> list[tuple[
     res = []
     prev = None
     for segment in segments:
-        tuples = _get_possible_tuples(distance, segment)
+        tuples = __get_possible_tuples(distance, segment)
         if (prev is not None and segment[0] - prev[-1] - 1 == distance):
             res.append((prev[-1], segment[0]))
 
