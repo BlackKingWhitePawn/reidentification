@@ -1,6 +1,7 @@
 import albumentations as A
 import torch
 from albumentations.pytorch import ToTensorV2
+from src.config import IMAGENET_MEAN, IMAGENET_STD
 
 
 def get_resize_transform(size: tuple[int, int]) -> A.Sequential:
@@ -10,7 +11,7 @@ def get_resize_transform(size: tuple[int, int]) -> A.Sequential:
     ])
 
 
-def get_norm_transform(mean: list[int] = [0.485, 0.456, 0.406], std: list[int] = [0.229, 0.224, 0.225]) -> A.Sequential:
+def get_norm_transform(mean: list[int] = IMAGENET_MEAN, std: list[int] = IMAGENET_STD) -> A.Sequential:
     """Возвращает преобразование нормализации и приведения к тензору"""
     return A.Sequential([
         A.Normalize(mean=mean, std=std),

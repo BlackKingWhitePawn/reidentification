@@ -25,6 +25,7 @@ train:
 from os.path import join
 
 import cv2
+from numpy.random import choice
 from torch.utils.data import Dataset as Dataset
 from tqdm import tqdm as tqdm
 
@@ -71,8 +72,10 @@ class MOT20ExtDataset(Dataset):
         self.ground_truth = df
         # формируем словарь, используемый для длины и индексации
         self._objetcs_pairs_dict = self._get_pairs_dict()
-        # заранее рассчитываем длину датасета
-        self._len = self._calc_len()
+        # рассчитываем количество объектов с меткой 1
+        self._len_1 = self._calc_len()
+        # рассчитываем длину всего датасета
+        self._len = round(self._len_1 / (1 - negative_proportion))
         self.transform = transform
 
     def _check_distance_correct(self, distance: int) -> None:
@@ -140,8 +143,8 @@ class MOT20ExtDataset(Dataset):
         return count
 
     def _get_pairs_by_idx(self, idx: int) -> tuple[int, int, int, int]:
-        """Ищет пару объектов, распологающуюся в датасете по индексу idx.
-        Возвращает tuple - (id первого объекта, id второго объекта, frame_id первого объекта, frame_id второго объекта)"""
+        """Возвращает пару объектов класса 1, распологающуюся в датасете по индексу idx,
+        в формате tuple - (id первого объекта, id второго объекта, frame_id первого объекта, frame_id второго объекта)"""
         previous_pairs_count = 0
         object_id = -1
         object_pairs = None
@@ -182,23 +185,43 @@ class MOT20ExtDataset(Dataset):
                                 iiidx]
                             return (object_id, object_id, *object_pairs)
 
+    def _get_pairs0_by_idx(self, idx: int) -> tuple[int, int, int, int]:
+        """Возвращает пару объектов класса 0, распологающуюся в датасете по индексу idx,
+        в формате tuple - (id первого объекта, id второго объекта, frame_id первого объекта, frame_id второго объекта).
+        Объект берется рандомно
+        """
+        object_ids = self.ground_truth['id'].unique()
+        id1 = choice(object_ids)
+        frame_ids = self.ground_truth[self.ground_truth['id']
+                                      == id1]['frame']
+        frame1 = choice(frame_ids)
+        id2 = choice(object_ids)
+        frame_ids = self.ground_truth[self.ground_truth['id']
+                                      == id2]['frame']
+        frame2 = choice(frame_ids)
+
+        return (id1, id2, frame1, frame2)
+
     def __len__(self) -> int:
         return self._len
 
     def __getitem__(self, idx: int) -> tuple[cv2.Mat, cv2.Mat, int]:
         """Возвращает два изображения в формате cv2.Mat и метку: 1, если на изображении один и тот же объект, иначе 0
         Нумерация начинается с 0. Объекты в датасете хранятся в порядке:
-        - сначала пары <объект;объект>, затем <объект;другой_объект>
-        - пары <объект;объект> отсортированы по возрастанию id
-        - пары для одного объекта отсортированы по возрастанию distance, затем frame_id первого кадра пары
+        - пары <объект;объект>
+            - пары <объект;объект> отсортированы по возрастанию id
+            - пары для одного объекта отсортированы по возрастанию distance, затем frame_id первого кадра пары
+        - пары <объект;другой_объект>
+            - рандомный объект
         """
-        id1, id2, frame_id1, frame_id2 = self._get_pairs_by_idx(idx)
+        id1, id2, frame_id1, frame_id2 = self._get_pairs_by_idx(
+            idx) if (idx < self._len_1) else self._get_pairs0_by_idx(idx)
         img1 = cv2.imread(join(self.video_path, str(
             id1), f'{str(frame_id1).zfill(6)}.jpg'))
         img2 = cv2.imread(join(self.video_path, str(
             id2), f'{str(frame_id2).zfill(6)}.jpg'))
         if (self.transform):
-            img1 = self.transform(image=img1)  # ['image']
-            img2 = self.transform(image=img2)  # ['image']
+            img1 = self.transform(image=img1)['image']
+            img2 = self.transform(image=img2)['image']
 
         return (img1, img2, 1 if (id1 == id2) else 0)
