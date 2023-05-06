@@ -44,10 +44,12 @@ class MOT20ExtDataset(Dataset):
             video_path: str,
             transform=None,
             visibility_threshold: float = 1,
-            frame_distance: int | list[int] | tuple[int, int] = 1,
+            frame_distance: int | list[int] | tuple[int, int] = 0,
             negative_proportion: float = 0.5
     ) -> None:
         """
+        Создает объект типа Dataset, загружающий данные преобразованного датасета MOT20_ext.
+        Возвращает пары изображений и метку: 1, если на изображении один и тот же объект, иначе 0 
         ### Parameters:
         - video_path: str - путь до директории с видео датасета МОТ20_ехт. Ожидается, что в директории находятся файлы описаний и ground truth
         - transform - применяемые аугментации
@@ -71,6 +73,7 @@ class MOT20ExtDataset(Dataset):
         self._objetcs_pairs_dict = self._get_pairs_dict()
         # заранее рассчитываем длину датасета
         self._len = self._calc_len()
+        self.transform = transform
 
     def _check_distance_correct(self, distance: int) -> None:
         """Проверяет корректность типов и значений для расстояния"""
@@ -194,4 +197,8 @@ class MOT20ExtDataset(Dataset):
             id1), f'{str(frame_id1).zfill(6)}.jpg'))
         img2 = cv2.imread(join(self.video_path, str(
             id2), f'{str(frame_id2).zfill(6)}.jpg'))
+        if (self.transform):
+            img1 = self.transform(image=img1)  # ['image']
+            img2 = self.transform(image=img2)  # ['image']
+
         return (img1, img2, 1 if (id1 == id2) else 0)
