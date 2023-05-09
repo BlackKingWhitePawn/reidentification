@@ -50,7 +50,7 @@ class MOT20ExtDataset(Dataset):
     ) -> None:
         """
         Создает объект типа Dataset, загружающий данные преобразованного датасета MOT20_ext.
-        Возвращает пары изображений и метку: 1, если на изображении один и тот же объект, иначе 0 
+        Возвращает пары изображений и метку: 0, если на изображении один и тот же объект, иначе 1 
         ### Parameters:
         - video_path: str - путь до директории с видео датасета МОТ20_ехт. Ожидается, что в директории находятся файлы описаний и ground truth
         - transform - применяемые аугментации
@@ -224,4 +224,4 @@ class MOT20ExtDataset(Dataset):
             img1 = self.transform(image=img1)['image']
             img2 = self.transform(image=img2)['image']
 
-        return (img1, img2, 1 if (id1 == id2) else 0)
+        return (img1, img2, 0 if (id1 == id2) else 1)

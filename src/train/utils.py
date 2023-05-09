@@ -14,7 +14,7 @@ def display_images(img_tensors: tuple[torch.Tensor, torch.Tensor], label: int, m
     f, axarr = plt.subplots(1, 2)
     axarr[0].imshow(image1.clip(0, 1))
     axarr[1].imshow(image2.clip(0, 1))
-    axarr[0].text(0.0, 1.0, 'similar' if (label == 1) else 'different',
+    axarr[0].text(0.0, 1.0, 'similar' if (label == 0) else 'different',
                   bbox=dict(facecolor='0.7', edgecolor='none', pad=3.0))
 
 
@@ -28,7 +28,7 @@ def display_batch(batch, mean: list[int] = IMAGENET_MEAN, std: list[int] = IMAGE
         image2 = std * x2.permute(1, 2, 0).numpy() + mean
         axs[i, 0].imshow(image1.clip(0, 1))
         axs[i, 1].imshow(image2.clip(0, 1))
-        axs[i, 0].text(0.0, 1.0, 'similar' if (y == 1) else 'different',
+        axs[i, 0].text(0.0, 1.0, 'similar' if (y == 0) else 'different',
                        bbox=dict(facecolor='0.7', edgecolor='none', pad=3.0))
 
 
