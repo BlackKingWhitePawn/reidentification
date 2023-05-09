@@ -2,7 +2,7 @@ import sys
 
 import numpy as np
 import torch.nn as nn
-from tqdm.auto import tqdm
+from tqdm import tqdm
 from torch.optim import Optimizer
 from torch.utils.data import DataLoader
 import torch
