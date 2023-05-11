@@ -1,3 +1,3 @@
-from .reidentification import SiameseBasicCNN, ContrastiveLoss, SiameseTransfered
+from .reidentification import SiameseBasicCNN, SiameseTransfered
 
-__all__ = [SiameseBasicCNN, ContrastiveLoss, SiameseTransfered]
+__all__ = [SiameseBasicCNN, SiameseTransfered]
