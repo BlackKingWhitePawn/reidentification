@@ -3,6 +3,7 @@ import numpy as np
 import torch
 from torch.utils.data import DataLoader
 from tqdm import tqdm
+from datetime import datetime
 
 from src.config import IMAGENET_MEAN, IMAGENET_STD
 
@@ -52,3 +53,17 @@ def get_statistics(loader: DataLoader) -> tuple[torch.Tensor, torch.Tensor]:
     std /= nb_samples
 
     return (mean, std)
+
+
+def save_train_results(
+        model_name: str,
+        datetime: datetime,
+        epoch_count: int,
+        lr: float,
+        loss_name: str,
+        dataset: str,
+        gamma: float = -1,
+        step_size: int = -1
+):
+    """Сохраняет результат обучения в датафрейм"""
+    pass

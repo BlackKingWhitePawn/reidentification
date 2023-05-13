@@ -1,11 +1,12 @@
 import sys
+from datetime import datetime
 
 import numpy as np
+import torch
 import torch.nn as nn
-from tqdm import tqdm
 from torch.optim import Optimizer
 from torch.utils.data import DataLoader
-import torch
+from tqdm import tqdm
 
 
 def train_epoch(
@@ -128,3 +129,99 @@ def fit(
             )
         # Save eval losses
         epoch_eval_losses.append(validation_metrics["loss"])
+
+
+def train_siamese(
+    model: torch.nn.Module = None,
+    train_loader: DataLoader = None,
+    val_loader: DataLoader = None,
+    optimizer: Optimizer = None,
+    criterion=None,
+    epoch_count: int = 10,
+    scheduler: None = None,
+    threshold: float = 0.5,
+    device: torch.device = torch.device('cpu'),
+):
+    """Обучает сиамскую модель с выбранными параметрами.
+    Сохраняет результаты обучения в таблицу.
+    ### Parameters:
+    - model: Module - обучаемая модель
+    - train_loader: DataLoader - трейн лоадер
+    - val_loader: DataLoader - валидационный лоадер
+    - optimizer: Optimizer - оптимизационный метод
+    - criterion - лосс-функция
+    - epoch_count: int - кол-во эпох. нумерация начинается с нулевой
+    - scheduler - планировщик lr
+    - threshold: float - порог, разбивающий предсказания для батча. 
+        Все предсказание предварительно нормализуется в границах [0;1] 
+    - device: device - устройство
+    """
+    losses_train = []
+    accuracies_train = []
+    losses_val = []
+    accuracies_val = []
+    best_val_accuracy = 0
+
+    for epoch in range(epoch_count):
+        print('Epoch {}/{}:'.format(epoch, epoch_count - 1), flush=True)
+        for phase in ['train', 'val']:
+            if (phase == 'train'):
+                dataloader = train_loader
+                if (scheduler is not None):
+                    scheduler.step()
+                model.train()
+            else:
+                dataloader = val_loader
+                model.eval()
+
+            running_loss = 0.
+            running_acc = 0.
+
+            for (x1, x2, y) in tqdm(dataloader):
+                x1, x2, y = x1.to(device), x2.to(device), y.to(device)
+                optimizer.zero_grad()
+                with torch.set_grad_enabled(phase == 'train'):
+                    distance = model(x1, x2)
+                    loss = criterion(distance, y)
+                    d = distance.clone().reshape(-1)
+                    # нормализация к [0;1]
+                    d_min, _ = torch.min(d, dim=0)
+                    d_max, _ = torch.max(d, dim=0)
+                    d = (d - d_min) / (d_max - d_min)
+                    d[d <= threshold] = 0
+                    d[d > threshold] = 1
+
+                    if (phase == 'train'):
+                        loss.backward()
+                        optimizer.step()
+
+                running_loss += loss.item()
+                running_acc += torch.eq(d, y).float().mean()
+
+            epoch_loss = running_loss / len(dataloader)
+            epoch_acc = running_acc / len(dataloader)
+            if phase == 'val':
+                losses_val.append(epoch_loss)
+                accuracies_val.append(epoch_acc)
+            else:
+                losses_train.append(epoch_loss)
+                accuracies_train.append(epoch_acc)
+
+            print('{} Loss: {:.4f} Acc: {:.4f}'.format(
+                phase, epoch_loss, epoch_acc), flush=True)
+
+            if phase == 'val' and best_val_accuracy < epoch_acc:
+                best_val_accuracy = epoch_acc
+                torch.save({
+                    'epoch': epoch,
+                    'model_state_dict': model.state_dict(),
+                    'optimizer_state_dict': optimizer.state_dict(),
+                    'loss': epoch_loss,
+                    'model_name': model.name,
+                }, f'./models/{model.name}_{datetime.now().strftime("%d.%m_%H:%M")}.pth')
+                print(f'Model saved at {model.name}.pth')
+
+    return model, {
+        'train': (losses_train, accuracies_train),
+        'val': (losses_val, accuracies_val)
+    }

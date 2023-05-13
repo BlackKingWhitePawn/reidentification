@@ -35,5 +35,5 @@ class SiameseTransfered(nn.Module):
         out1 = self.base_model(x1)
         out2 = self.base_model(x2)
 
-        return torch.sigmoid((F.pairwise_distance(
-            out1, out2, keepdim=True)))
+        return F.pairwise_distance(
+            out1, out2, keepdim=True)
