@@ -1,13 +1,15 @@
-from src.data.mot_ext import MOT20ExtDataset
 from os.path import join
-from src.config import DATA_PATH
-from torch.utils.data import ConcatDataset, Dataset, DataLoader, random_split
+
 from torch import Generator
+from torch.utils.data import ConcatDataset, DataLoader, Dataset, random_split
+
+from src.config import DATA_PATH
+from src.data.mot_ext import MOT20ExtDataset
 
 # конфигурации используемые в обучении
 # как с этим работать - проводим обучение, если результат нам что то говорит - сохраняем конфиг
-CONFIGS = [
-    {
+CONFIGS = {
+    "mot20_ext_v1": {
         "dataset_config": 'mot20_ext_v1',
         "dataset": 'MOT20_ext',
         "dataset_use": 0.002,
@@ -16,10 +18,10 @@ CONFIGS = [
         "test_proportion": 0.2,
         "batch_size": 16
     }
-]
+}
 
 
-def get_dataset(name: str, transform: None) -> Dataset | None:
+def get_dataset(name: str, transform=None) -> Dataset | None:
     """Загружает датасет по указанному идентификатору
     ### Parameters:
     - name: str - имя датасета
@@ -37,7 +39,7 @@ def get_dataset(name: str, transform: None) -> Dataset | None:
         return ConcatDataset([dataset01, dataset02, dataset03, dataset05])
 
 
-def get_loaders(config: dict, generator: Generator = None) -> tuple[DataLoader, DataLoader, DataLoader]:
+def get_loaders(config: dict, generator: Generator = None, transform=None) -> tuple[DataLoader, DataLoader, DataLoader]:
     """Возвращает три лоадера train, val, test. 
     Следует использовать для загрузки датасетов с уже сохраненными параметрами.
     Для загрузки с новыми параметрами стоит использовать ручное создание лоадеров
@@ -46,11 +48,15 @@ def get_loaders(config: dict, generator: Generator = None) -> tuple[DataLoader, 
         `{"dataset_config": 'mot20_ext_v1',"dataset": 'MOT20_ext',"dataset_use": 0.002,"train_proportion": 0.65,"val_proportion": 0.15,"test_proportion": 0.2 }`
     - generator: Generator - опицонально, генератор для рандом сплит
     """
-    dataset = get_dataset(config['dataset'])
+    dataset = get_dataset(config['dataset'], transform=transform)
     dataset_use, _ = random_split(
         dataset, [config['dataset_use'], 1 - config['dataset_use']], generator=generator)
-    train_set, val_set, test_set = random_split(dataset_use, [
-                                                config['train_proportion'], config['vrain_proportion'], config['test_proportion']], generator=generator)
+    train_set, val_set, test_set = random_split(
+        dataset_use, [
+            config['train_proportion'],
+            config['val_proportion'],
+            config['test_proportion']],
+        generator=generator)
     train_loader = DataLoader(
         train_set,
         shuffle=True,
