@@ -1,11 +1,14 @@
+from datetime import datetime
+from os.path import exists, join
+
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 import torch
 from torch.utils.data import DataLoader
 from tqdm import tqdm
-from datetime import datetime
 
-from src.config import IMAGENET_MEAN, IMAGENET_STD
+from src.config import IMAGENET_MEAN, IMAGENET_STD, RESULTS_PATH
 
 
 def display_images(img_tensors: tuple[torch.Tensor, torch.Tensor], label: int, mean: list[int] = IMAGENET_MEAN, std: list[int] = IMAGENET_STD):
@@ -60,10 +63,93 @@ def save_train_results(
         datetime: datetime,
         epoch_count: int,
         lr: float,
+        optimizer: str,
         loss_name: str,
-        dataset: str,
+        dataset_config: str,
+        val_losses: list[float],
+        val_accuracies: list[float],
+        # test_accuracy: float = None,
         gamma: float = -1,
-        step_size: int = -1
+        step_size: int = -1,
+        config: dict = None
 ):
-    """Сохраняет результат обучения в датафрейм"""
+    """Сохраняет результат обучения в датафрейм
+    ### Parameters:
+    - model_name: str
+    - datetime: datetime
+    - epoch_count: int
+    - lr: float
+    - optimizer: str
+    - loss_name: str
+    - dataset_config: str
+    - val_losses: list[float]
+    - val_accuracies: list[float]
+    - gamma: float
+    - step_size: int
+    - config: dict
+    """
+    file_path = join(RESULTS_PATH, 'experiments.csv')
+    df = None
+    if (not exists(file_path)):
+        # TODO: указать типы
+        df = pd.DataFrame(columns=[
+            'model_name',
+            'datetime',
+            'epoch_count',
+            'optimizer',
+            'lr',
+            'gamma',
+            'step_size',
+            'loss_name',
+            'dataset_config'
+        ])
+        df.to_csv(file_path, sep=',', index=False)
+    else:
+        df = pd.read_csv(file_path)
+
+    df = df.append(pd.DataFrame({
+        'model_name': model_name,
+        'datetime': datetime,
+        'epoch_count': epoch_count,
+        'optimizer': optimizer,
+        'lr': lr,
+        'gamma': gamma if (gamma > 0) else np.nan,
+        'step_size': step_size if (step_size > 0) else np.nan,
+        'loss_name': loss_name,
+        'val_losses': ';'.join(map(str, val_losses)),
+        'val_accuracies': ';'.join(map(str, val_accuracies)),
+        'test': np.nan,
+        'dataset_config': config['dataset_config'] if (config is not None) else dataset_config
+    }, index=[0]))
+    df.to_csv(file_path, sep=',', index=False)
+
+    if (config is not None):
+        config_path = join(RESULTS_PATH, 'configs.csv')
+        df_config = None
+        if (not exists(config_path)):
+            # TODO: указать типы
+            df_config = pd.DataFrame(columns=[
+                'dataset_config',
+                'dataset',
+                'dataset_use',
+                'train_proportion',
+                'val_proportion',
+                'test_proportion',
+                'batch_size',
+                'extra_values'
+            ])
+            df_config.to_csv(config_path, sep=',', index=False)
+        else:
+            df_config = pd.read_csv(config_path)
+
+        if (config['dataset_config'] not in df_config['dataset_config'].unique()):
+            config['extra_values'] = ';'.join([f'{k}={v}' for k, v in zip(
+                config['extra_values'], config['extra_values'].values())])
+            config_append = pd.DataFrame(config, index=[0])
+            df_config = df_config.append(config_append)
+            df_config.to_csv(config_path, sep=',', index=False)
+
+
+def save_test_results():
+    """Сохраняет в таблицу с экспериментами результат теста для соответствующей конфигурации"""
     pass

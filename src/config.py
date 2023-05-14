@@ -6,6 +6,7 @@ DEBUG = False
 
 # enviroment
 DATA_PATH = join(pathlib.Path().resolve(), 'data')
+RESULTS_PATH = join(pathlib.Path().resolve(), 'results')
 
 # constants
 IMAGENET_MEAN = [0.485, 0.456, 0.406]

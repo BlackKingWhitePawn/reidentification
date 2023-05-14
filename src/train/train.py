@@ -8,6 +8,8 @@ from torch.optim import Optimizer
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
+from .utils import save_train_results
+
 
 def train_epoch(
     model: nn.Module,
@@ -136,11 +138,14 @@ def train_siamese(
     train_loader: DataLoader = None,
     val_loader: DataLoader = None,
     optimizer: Optimizer = None,
+    lr: float = None,
     criterion=None,
     epoch_count: int = 10,
     scheduler: None = None,
     threshold: float = 0.5,
     device: torch.device = torch.device('cpu'),
+    config: dict = None,
+    dataset_config: str = None
 ):
     """Обучает сиамскую модель с выбранными параметрами.
     Сохраняет результаты обучения в таблицу.
@@ -161,6 +166,8 @@ def train_siamese(
     losses_val = []
     accuracies_val = []
     best_val_accuracy = 0
+    best_val_loss = 1e10
+    dt = None
 
     for epoch in range(epoch_count):
         print('Epoch {}/{}:'.format(epoch, epoch_count - 1), flush=True)
@@ -210,16 +217,34 @@ def train_siamese(
             print('{} Loss: {:.4f} Acc: {:.4f}'.format(
                 phase, epoch_loss, epoch_acc), flush=True)
 
-            if phase == 'val' and best_val_accuracy < epoch_acc:
+            if phase == 'val' and (best_val_accuracy < epoch_acc
+                                   or (best_val_accuracy == epoch_acc and epoch_loss < best_val_loss)):
                 best_val_accuracy = epoch_acc
+                best_val_loss = epoch_loss
+                dt = datetime.now()
                 torch.save({
                     'epoch': epoch,
                     'model_state_dict': model.state_dict(),
                     'optimizer_state_dict': optimizer.state_dict(),
                     'loss': epoch_loss,
                     'model_name': model.name,
-                }, f'./models/{model.name}_{datetime.now().strftime("%d.%m_%H:%M")}.pth')
+                }, f'./models/{model.name}_{dt.strftime("%d.%m_%H:%M")}.pth')
                 print(f'Model saved at {model.name}.pth')
+
+    save_train_results(
+        model.name,
+        dt,
+        epoch_count,
+        lr,
+        str(optimizer).split(' ')[0],
+        str(loss)[:-2],
+        dataset_config,
+        losses_val,
+        accuracies_val,
+        scheduler.gamma if (scheduler) else -1,
+        scheduler.step_size if (scheduler) else -1,
+        config
+    )
 
     return model, {
         'train': (losses_train, accuracies_train),
