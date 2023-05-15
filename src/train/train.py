@@ -203,7 +203,7 @@ def train_siamese(
                         optimizer.step()
 
                 running_loss += loss.item()
-                running_acc += torch.eq(d, y).float().mean()
+                running_acc += torch.eq(d, y).float().mean().item()
 
             epoch_loss = running_loss / len(dataloader)
             epoch_acc = running_acc / len(dataloader)

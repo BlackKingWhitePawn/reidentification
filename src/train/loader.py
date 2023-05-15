@@ -29,16 +29,16 @@ def get_dataset(config: dict, transform=None) -> Dataset | None:
     """
     name = config['dataset']
     if (name == 'mot20_ext'):
-        extra_values = config['extra_values'] if (
-            'extra_values' in config) else {}
+        extra_parameters = config['extra_parameters'] if (
+            'extra_parameters' in config) else {}
         dataset01 = MOT20ExtDataset(
-            join(DATA_PATH, 'MOT20_ext/train/MOT20-01/'), transform=transform, **extra_values)
+            join(DATA_PATH, 'MOT20_ext/train/MOT20-01/'), transform=transform, **extra_parameters)
         dataset02 = MOT20ExtDataset(
-            join(DATA_PATH, 'MOT20_ext/train/MOT20-02/'), transform=transform, **extra_values)
+            join(DATA_PATH, 'MOT20_ext/train/MOT20-02/'), transform=transform, **extra_parameters)
         dataset03 = MOT20ExtDataset(
-            join(DATA_PATH, 'MOT20_ext/train/MOT20-03/'), transform=transform, **extra_values)
+            join(DATA_PATH, 'MOT20_ext/train/MOT20-03/'), transform=transform, **extra_parameters)
         dataset05 = MOT20ExtDataset(
-            join(DATA_PATH, 'MOT20_ext/train/MOT20-05/'), transform=transform, **extra_values)
+            join(DATA_PATH, 'MOT20_ext/train/MOT20-05/'), transform=transform, **extra_parameters)
         return ConcatDataset([dataset01, dataset02, dataset03, dataset05])
 
 

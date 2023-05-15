@@ -122,7 +122,7 @@ def save_train_results(
         'test_accuracy': np.nan,
         'dataset_config': config['dataset_config'],
         'extra_parameters': ';'.join([f'{k}={v}' for k, v in zip(
-            config['extra_parameters'], config['extra_parameters'].values())]) if ('extra_parameters' in config) else None
+            extra_parameters, extra_parameters.values())]) if (extra_parameters) else None
     }, index=[0]))
     df.to_csv(file_path, sep=',', index=False)
 
@@ -140,15 +140,17 @@ def save_train_results(
                 'val_proportion',
                 'test_proportion',
                 'batch_size',
-                'extra_values'
+                'extra_parameters'
             ])
             df_config.to_csv(config_path, sep=',', index=False)
         else:
             df_config = pd.read_csv(config_path)
 
         if (config['dataset_config'] not in df_config['dataset_config'].unique()):
-            config['extra_values'] = ';'.join([f'{k}={v}' for k, v in zip(
-                config['extra_values'], config['extra_values'].values())])
+            config['train_proportion'] = config['train_proportion'] if (
+                'train_proportion' in config) else 1 - config['val_proportion'] - config['test_proportion']
+            config['extra_parameters'] = ';'.join([f'{k}={v}' for k, v in zip(
+                config['extra_parameters'], config['extra_parameters'].values())])
             config_append = pd.DataFrame(config, index=[0])
             df_config = df_config.append(config_append)
             df_config.to_csv(config_path, sep=',', index=False)
