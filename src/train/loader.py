@@ -21,21 +21,24 @@ CONFIGS = {
 }
 
 
-def get_dataset(name: str, transform=None) -> Dataset | None:
+def get_dataset(config: dict, transform=None) -> Dataset | None:
     """Загружает датасет по указанному идентификатору
     ### Parameters:
     - name: str - имя датасета
-        - MOT20_ext - возвращает полный тренировочный набор MOT20_ext (все видео вместе)
+        - mot20_ext - возвращает полный тренировочный набор MOT20_ext (все видео вместе)
     """
-    if (name == 'MOT20_ext'):
+    name = config['dataset']
+    if (name == 'mot20_ext'):
+        extra_values = config['extra_values'] if (
+            'extra_values' in config) else {}
         dataset01 = MOT20ExtDataset(
-            join(DATA_PATH, 'MOT20_ext/train/MOT20-01/'), transform=transform)
+            join(DATA_PATH, 'MOT20_ext/train/MOT20-01/'), transform=transform, **extra_values)
         dataset02 = MOT20ExtDataset(
-            join(DATA_PATH, 'MOT20_ext/train/MOT20-02/'), transform=transform)
+            join(DATA_PATH, 'MOT20_ext/train/MOT20-02/'), transform=transform, **extra_values)
         dataset03 = MOT20ExtDataset(
-            join(DATA_PATH, 'MOT20_ext/train/MOT20-03/'), transform=transform)
+            join(DATA_PATH, 'MOT20_ext/train/MOT20-03/'), transform=transform, **extra_values)
         dataset05 = MOT20ExtDataset(
-            join(DATA_PATH, 'MOT20_ext/train/MOT20-05/'), transform=transform)
+            join(DATA_PATH, 'MOT20_ext/train/MOT20-05/'), transform=transform, **extra_values)
         return ConcatDataset([dataset01, dataset02, dataset03, dataset05])
 
 
@@ -48,12 +51,15 @@ def get_loaders(config: dict, generator: Generator = None, transform=None) -> tu
         `{"dataset_config": 'mot20_ext_v1',"dataset": 'MOT20_ext',"dataset_use": 0.002,"train_proportion": 0.65,"val_proportion": 0.15,"test_proportion": 0.2 }`
     - generator: Generator - опицонально, генератор для рандом сплит
     """
-    dataset = get_dataset(config['dataset'], transform=transform)
+    dataset = get_dataset(config, transform=transform)
     dataset_use, _ = random_split(
         dataset, [config['dataset_use'], 1 - config['dataset_use']], generator=generator)
+    train_proportion = config['train_proportion'] \
+        if ('train_proportion' in config) else \
+        1 - config['val_proportion'] - config['test_proportion']
     train_set, val_set, test_set = random_split(
         dataset_use, [
-            config['train_proportion'],
+            train_proportion,
             config['val_proportion'],
             config['test_proportion']],
         generator=generator)
@@ -63,9 +69,7 @@ def get_loaders(config: dict, generator: Generator = None, transform=None) -> tu
         batch_size=config['batch_size'],
         drop_last=True,
         generator=generator,
-
     )
-
     val_loader = DataLoader(
         val_set,
         shuffle=True,
@@ -73,7 +77,6 @@ def get_loaders(config: dict, generator: Generator = None, transform=None) -> tu
         drop_last=True,
         generator=generator
     )
-
     test_loader = DataLoader(
         test_set,
         shuffle=True,

@@ -65,28 +65,28 @@ def save_train_results(
         lr: float,
         optimizer: str,
         loss_name: str,
-        dataset_config: str,
         val_losses: list[float],
         val_accuracies: list[float],
+        config: dict,
         # test_accuracy: float = None,
         gamma: float = -1,
         step_size: int = -1,
-        config: dict = None
+        extra_parameters: dict = {}
 ):
     """Сохраняет результат обучения в датафрейм
     ### Parameters:
-    - model_name: str
-    - datetime: datetime
-    - epoch_count: int
-    - lr: float
-    - optimizer: str
-    - loss_name: str
-    - dataset_config: str
-    - val_losses: list[float]
-    - val_accuracies: list[float]
-    - gamma: float
-    - step_size: int
-    - config: dict
+    - model_name: str - название модели
+    - datetime: datetime - время
+    - epoch_count: int - кол-во эпох
+    - lr: float - шаг обучения
+    - optimizer: str - метод спуска
+    - loss_name: str - название функции ошибки
+    - val_losses: list[float] - список значений функции ошибки на валидации
+    - val_accuracies: list[float] - список значений метрики на валидации
+    - gamma: float - параметр гамма
+    - step_size: int - параметр шага для планировщика 
+    - config: dict - конфигурация датасета
+    - extra_parameters: dict - дополнительные параметры обучения
     """
     file_path = join(RESULTS_PATH, 'experiments.csv')
     df = None
@@ -101,7 +101,8 @@ def save_train_results(
             'gamma',
             'step_size',
             'loss_name',
-            'dataset_config'
+            'dataset_config',
+            'extra_parameters'
         ])
         df.to_csv(file_path, sep=',', index=False)
     else:
@@ -118,11 +119,14 @@ def save_train_results(
         'loss_name': loss_name,
         'val_losses': ';'.join(map(str, val_losses)),
         'val_accuracies': ';'.join(map(str, val_accuracies)),
-        'test': np.nan,
-        'dataset_config': config['dataset_config'] if (config is not None) else dataset_config
+        'test_accuracy': np.nan,
+        'dataset_config': config['dataset_config'],
+        'extra_parameters': ';'.join([f'{k}={v}' for k, v in zip(
+            config['extra_parameters'], config['extra_parameters'].values())]) if ('extra_parameters' in config) else None
     }, index=[0]))
     df.to_csv(file_path, sep=',', index=False)
 
+    # TODO: сохранять дефолтные параметры датасета и кол-во трейна если они не переданы явно
     if (config is not None):
         config_path = join(RESULTS_PATH, 'configs.csv')
         df_config = None

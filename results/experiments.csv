@@ -1,0 +1,2 @@
+model_name,datetime,epoch_count,optimizer,lr,gamma,step_size,loss_name,dataset_config,extra_parameters,val_losses,val_accuracies,test_accuracy
+siamese_resnet18_l4,2023-05-15 13:00:01.513560,1,Adam,0.001,,,ContrastiveLoss,mot20_ext-v1a,,217.92743937174478,tensor(0.8333),

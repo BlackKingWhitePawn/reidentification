@@ -134,18 +134,17 @@ def fit(
 
 
 def train_siamese(
-    model: torch.nn.Module = None,
-    train_loader: DataLoader = None,
-    val_loader: DataLoader = None,
-    optimizer: Optimizer = None,
-    lr: float = None,
-    criterion=None,
-    epoch_count: int = 10,
+    model: torch.nn.Module,
+    train_loader: DataLoader,
+    val_loader: DataLoader,
+    optimizer: Optimizer,
+    lr: float,
+    criterion,
+    epoch_count: int,
+    threshold: float,
     scheduler: None = None,
-    threshold: float = 0.5,
     device: torch.device = torch.device('cpu'),
     config: dict = None,
-    dataset_config: str = None
 ):
     """Обучает сиамскую модель с выбранными параметрами.
     Сохраняет результаты обучения в таблицу.
@@ -160,6 +159,7 @@ def train_siamese(
     - threshold: float - порог, разбивающий предсказания для батча. 
         Все предсказание предварительно нормализуется в границах [0;1] 
     - device: device - устройство
+    - config: dict - конфигурация датасета
     """
     losses_train = []
     accuracies_train = []
@@ -232,18 +232,20 @@ def train_siamese(
                 print(f'Model saved at {model.name}.pth')
 
     save_train_results(
-        model.name,
-        dt,
-        epoch_count,
-        lr,
-        str(optimizer).split(' ')[0],
-        str(loss)[:-2],
-        dataset_config,
-        losses_val,
-        accuracies_val,
-        scheduler.gamma if (scheduler) else -1,
-        scheduler.step_size if (scheduler) else -1,
-        config
+        model_name=model.name,
+        datetime=dt,
+        epoch_count=epoch_count,
+        lr=lr,
+        optimizer=str(optimizer).split(' ')[0],
+        loss_name=str(criterion)[:-2],
+        val_losses=losses_val,
+        val_accuracies=accuracies_val,
+        gamma=scheduler.gamma if (scheduler) else -1,
+        step_size=scheduler.step_size if (scheduler) else -1,
+        config=config,
+        extra_parameters={
+            'threshold': threshold
+        }
     )
 
     return model, {
