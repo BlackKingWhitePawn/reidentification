@@ -108,6 +108,8 @@ def save_train_results(
     else:
         df = pd.read_csv(file_path)
 
+    # TODO: записывать датасет
+    # TODO: сохранять лучший val acc и loss
     df = df.append(pd.DataFrame({
         'model_name': model_name,
         'datetime': datetime,
@@ -159,3 +161,15 @@ def save_train_results(
 def save_test_results():
     """Сохраняет в таблицу с экспериментами результат теста для соответствующей конфигурации"""
     pass
+
+
+def get_distance_accuracy(predicted: torch.tensor, y: torch.tensor, threshold: float) -> float:
+    """Вычисляет значение accuracy для предсказанных расстояний с учетом порогового значения"""
+    d = predicted.reshape(-1)
+    # нормализация к [0;1]
+    d_min, _ = torch.min(d, dim=0)
+    d_max, _ = torch.max(d, dim=0)
+    d = (d - d_min) / (d_max - d_min)
+    d[d <= threshold] = 0
+    d[d > threshold] = 1
+    return torch.eq(d, y).float().mean().item()

@@ -8,7 +8,7 @@ from torch.optim import Optimizer
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
-from .utils import save_train_results
+from .utils import save_train_results, get_distance_accuracy
 
 
 def train_epoch(
@@ -190,20 +190,14 @@ def train_siamese(
                 with torch.set_grad_enabled(phase == 'train'):
                     distance = model(x1, x2)
                     loss = criterion(distance, y)
-                    d = distance.clone().reshape(-1)
-                    # нормализация к [0;1]
-                    d_min, _ = torch.min(d, dim=0)
-                    d_max, _ = torch.max(d, dim=0)
-                    d = (d - d_min) / (d_max - d_min)
-                    d[d <= threshold] = 0
-                    d[d > threshold] = 1
 
                     if (phase == 'train'):
                         loss.backward()
                         optimizer.step()
 
                 running_loss += loss.item()
-                running_acc += torch.eq(d, y).float().mean().item()
+                running_acc += get_distance_accuracy(
+                    distance.clone(), y, threshold)
 
             epoch_loss = running_loss / len(dataloader)
             epoch_acc = running_acc / len(dataloader)
