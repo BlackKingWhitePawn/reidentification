@@ -89,7 +89,7 @@ def save_train_results(
     - extra_parameters: dict - дополнительные параметры обучения
     """
     file_path = join(RESULTS_PATH, 'experiments.csv')
-    df = None
+    df: pd.DataFrame = None
     if (not exists(file_path)):
         # TODO: указать типы
         df = pd.DataFrame(columns=[
@@ -101,6 +101,11 @@ def save_train_results(
             'gamma',
             'step_size',
             'loss_name',
+            'val_losses',
+            'val_accuracies',
+            'best_val_acc',
+            'best_val_loss',
+            'test_accuracy',
             'dataset_config',
             'extra_parameters'
         ])
@@ -110,7 +115,7 @@ def save_train_results(
 
     # TODO: записывать датасет
     # TODO: сохранять лучший val acc и loss
-    df = df.append(pd.DataFrame({
+    df = pd.concat([df, pd.DataFrame({
         'model_name': model_name,
         'datetime': datetime,
         'epoch_count': epoch_count,
@@ -121,11 +126,13 @@ def save_train_results(
         'loss_name': loss_name,
         'val_losses': ';'.join(map(str, val_losses)),
         'val_accuracies': ';'.join(map(str, val_accuracies)),
+        'best_val_acc': max(val_accuracies),
+        'best_val_loss': min(val_losses),
         'test_accuracy': np.nan,
         'dataset_config': config['dataset_config'],
         'extra_parameters': ';'.join([f'{k}={v}' for k, v in zip(
             extra_parameters, extra_parameters.values())]) if (extra_parameters) else None
-    }, index=[0]))
+    }, index=[0])], axis=0)
     df.to_csv(file_path, sep=',', index=False)
 
     # TODO: сохранять дефолтные параметры датасета и кол-во трейна если они не переданы явно
@@ -154,7 +161,7 @@ def save_train_results(
             config['extra_parameters'] = ';'.join([f'{k}={v}' for k, v in zip(
                 config['extra_parameters'], config['extra_parameters'].values())])
             config_append = pd.DataFrame(config, index=[0])
-            df_config = df_config.append(config_append)
+            df_config = pd.concat([df, config_append], axis=0)
             df_config.to_csv(config_path, sep=',', index=False)
 
 

@@ -1,4 +1,2 @@
-model_name,datetime,epoch_count,optimizer,lr,gamma,step_size,loss_name,dataset_config,extra_parameters,val_losses,val_accuracies,test_accuracy
-siamese_resnet18_l4,2023-05-15 14:16:41.458515,1,Adam,0.001,,,ContrastiveLoss,mot20_ext-v1a,threshold=0.25,4087.4384765625,0.0,
-siamese_resnet18_l4,2023-05-15 14:18:55.297936,1,Adam,0.001,,,ContrastiveLoss,mot20_ext-v1a,threshold=0.25,4045.71630859375,0.0,
-siamese_resnet18_l4,2023-05-15 14:19:18.337717,1,Adam,0.001,,,ContrastiveLoss,mot20_ext-v1a,threshold=0.25,0.0,0.0,
+model_name,datetime,epoch_count,optimizer,lr,gamma,step_size,loss_name,val_losses,val_accuracies,best_val_acc,best_val_loss,test_accuracy,dataset_config,extra_parameters
+siamese_resnet18_linear,2023-05-16 21:04:15.317697,2,Adam,0.001,,,ContrastiveLoss,63.47208150227865;14.547251065572103,0.9791666666666666;0.9583333333333334,0.9791666666666666,14.547251065572103,,mot20_ext-v1a,threshold=0.25

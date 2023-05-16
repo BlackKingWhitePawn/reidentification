@@ -3,6 +3,7 @@
 .vscode/
 __pycache__
 .conda
+.venv
 
 # data
 /temp/
