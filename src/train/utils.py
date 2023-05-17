@@ -180,3 +180,8 @@ def get_distance_accuracy(predicted: torch.tensor, y: torch.tensor, threshold: f
     d[d <= threshold] = 0
     d[d > threshold] = 1
     return torch.eq(d, y).float().mean().item()
+
+
+def get_config(dataset_config: str) -> dict:
+    """Возвращает конфигурацию датасета по идентификатору"""
+    pass
