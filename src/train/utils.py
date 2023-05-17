@@ -67,6 +67,8 @@ def save_train_results(
         loss_name: str,
         val_losses: list[float],
         val_accuracies: list[float],
+        train_losses: list[float],
+        train_accuracies: list[float],
         config: dict,
         # test_accuracy: float = None,
         gamma: float = -1,
@@ -101,6 +103,8 @@ def save_train_results(
             'gamma',
             'step_size',
             'loss_name',
+            'train_losses',
+            'train_accuracies',
             'val_losses',
             'val_accuracies',
             'best_val_acc',
@@ -131,7 +135,9 @@ def save_train_results(
         'test_accuracy': np.nan,
         'dataset_config': config['dataset_config'],
         'extra_parameters': ';'.join([f'{k}={v}' for k, v in zip(
-            extra_parameters, extra_parameters.values())]) if (extra_parameters) else None
+            extra_parameters, extra_parameters.values())]) if (extra_parameters) else None,
+        'train_losses': ';'.join(map(str, train_losses)),
+        'train_accuracies': ';'.join(map(str, train_accuracies)),
     }, index=[0])], axis=0)
     df.to_csv(file_path, sep=',', index=False)
 

@@ -247,7 +247,9 @@ def train_siamese(
         config=config,
         extra_parameters={
             'threshold': threshold
-        }
+        },
+        train_accuracies=accuracies_train,
+        train_losses=losses_train
     )
 
     return model, {
