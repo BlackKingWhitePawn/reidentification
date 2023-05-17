@@ -161,7 +161,7 @@ def save_train_results(
             config['extra_parameters'] = ';'.join([f'{k}={v}' for k, v in zip(
                 config['extra_parameters'], config['extra_parameters'].values())])
             config_append = pd.DataFrame(config, index=[0])
-            df_config = pd.concat([df, config_append], axis=0)
+            df_config = pd.concat([df_config, config_append], axis=0)
             df_config.to_csv(config_path, sep=',', index=False)
 
 
@@ -184,4 +184,6 @@ def get_distance_accuracy(predicted: torch.tensor, y: torch.tensor, threshold: f
 
 def get_config(dataset_config: str) -> dict:
     """Возвращает конфигурацию датасета по идентификатору"""
-    pass
+    config_path = join(RESULTS_PATH, 'configs.csv')
+    if (exists(config_path)):
+        df_config = pd.read_csv(config_path)
