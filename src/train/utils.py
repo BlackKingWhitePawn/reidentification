@@ -187,3 +187,20 @@ def get_config(dataset_config: str) -> dict:
     config_path = join(RESULTS_PATH, 'configs.csv')
     if (exists(config_path)):
         df_config = pd.read_csv(config_path)
+        items = list(df_config[
+            df_config['dataset_config'] == dataset_config
+        ].to_dict('index').items())
+        if (len(items) == 0):
+            return
+        res = items[0][1]
+        res['extra_parameters'] = dict(
+            map(
+                lambda s: (s.split('=')[0], float(s.split('=')[1])),
+                res['extra_parameters'].split(';')
+            )
+        )
+        if ('frame_distance' in res['extra_parameters']):
+            res['extra_parameters']['frame_distance'] = int(
+                res['extra_parameters']['frame_distance'])
+
+        return res
