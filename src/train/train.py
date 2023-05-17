@@ -133,6 +133,14 @@ def fit(
         epoch_eval_losses.append(validation_metrics["loss"])
 
 
+def _get_loss_name(criterion) -> str:
+    """Возвращает строку, представляющую loss функцию"""
+    if (str(criterion) == 'ContrastiveLoss()'):
+        return f'{str(criterion)[:-2]} m={criterion.margin}'
+
+    return str(criterion)[:-2]
+
+
 def train_siamese(
     model: torch.nn.Module,
     train_loader: DataLoader,
@@ -231,7 +239,7 @@ def train_siamese(
         epoch_count=epoch_count,
         lr=lr,
         optimizer=str(optimizer).split(' ')[0],
-        loss_name=str(criterion)[:-2],
+        loss_name=_get_loss_name(criterion),
         val_losses=losses_val,
         val_accuracies=accuracies_val,
         gamma=scheduler.gamma if (scheduler) else -1,
