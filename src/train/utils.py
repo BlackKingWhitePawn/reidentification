@@ -1,3 +1,4 @@
+from copy import deepcopy
 from datetime import datetime
 from os.path import exists, join
 
@@ -9,6 +10,7 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from src.config import IMAGENET_MEAN, IMAGENET_STD, RESULTS_PATH
+from src.models import models_list
 
 
 def display_images(img_tensors: tuple[torch.Tensor, torch.Tensor], label: int, mean: list[int] = IMAGENET_MEAN, std: list[int] = IMAGENET_STD):
@@ -210,3 +212,21 @@ def get_config(dataset_config: str) -> dict:
                 res['extra_parameters']['frame_distance'])
 
         return res
+
+
+def get_experiments() -> pd.DataFrame:
+    file_path = join(RESULTS_PATH, 'experiments.csv')
+    return pd.read_csv(file_path)
+
+
+def get_model(df: pd.DataFrame):
+    """Возвращает загруженную модель
+    ### Parameters:
+     - df: DataFrame - таблица с данными о моделями. Ожидается таблица с одной строкой, берется строка по индексу 0
+    """
+    data = df.iloc[0]
+    model = deepcopy(models_list[data['model_name']])
+    name = f'{data["model_name"]}_{datetime.strptime(data["datetime"], "%Y-%m-%d %H:%M:%S.%f").strftime("%d.%m_%H:%M")}.pth'
+    state_dict = torch.load(f=f'models/{name}')
+    model.load_state_dict(state_dict=state_dict['model_state_dict'])
+    return model
