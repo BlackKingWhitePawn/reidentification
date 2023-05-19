@@ -36,4 +36,4 @@ class SiameseTransfered(nn.Module):
         out2 = self.base_model(x2)
 
         return F.pairwise_distance(
-            out1, out2, keepdim=True)
+            out1, out2, keepdim=True).item()

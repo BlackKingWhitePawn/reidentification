@@ -70,11 +70,13 @@ def get_loaders(config: dict, generator: Generator = None, transform=None) -> tu
     train_proportion = config['train_proportion'] \
         if ('train_proportion' in config) else \
         1 - config['val_proportion'] - config['test_proportion']
+    test_proportion = config['test_proportion'] if (
+        'test_proportion' in config) else 1 - config['val_proportion'] - config['train_proportion']
     train_set, val_set, test_set = random_split(
         dataset_use, [
             train_proportion,
             config['val_proportion'],
-            config['test_proportion']],
+            test_proportion],
         generator=generator)
     train_loader = DataLoader(
         train_set,
@@ -90,6 +92,10 @@ def get_loaders(config: dict, generator: Generator = None, transform=None) -> tu
         drop_last=True,
         generator=generator
     )
+
+    if (test_proportion == 0):
+        return train_loader, val_loader, None
+
     test_loader = DataLoader(
         test_set,
         shuffle=True,
