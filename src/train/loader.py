@@ -26,6 +26,7 @@ def get_dataset(config: dict, transform=None) -> Dataset | None:
     ### Parameters:
     - name: str - имя датасета
         - mot20_ext - возвращает полный тренировочный набор MOT20_ext (все видео вместе)
+        - mot20_ext_test - возвращает полный тестовый набор MOT20_ext (все видео вместе)
     """
     name = config['dataset']
     if (name == 'mot20_ext'):
@@ -39,6 +40,18 @@ def get_dataset(config: dict, transform=None) -> Dataset | None:
             join(DATA_PATH, 'MOT20_ext/train/MOT20-03/'), transform=transform, **extra_parameters)
         dataset05 = MOT20ExtDataset(
             join(DATA_PATH, 'MOT20_ext/train/MOT20-05/'), transform=transform, **extra_parameters)
+        return ConcatDataset([dataset01, dataset02, dataset03, dataset05])
+    elif (name == 'mot20_ext_test'):
+        extra_parameters = config['extra_parameters'] if (
+            'extra_parameters' in config) else {}
+        dataset01 = MOT20ExtDataset(
+            join(DATA_PATH, 'MOT20_ext/test/MOT20-01/'), transform=transform, **extra_parameters)
+        dataset02 = MOT20ExtDataset(
+            join(DATA_PATH, 'MOT20_ext/test/MOT20-02/'), transform=transform, **extra_parameters)
+        dataset03 = MOT20ExtDataset(
+            join(DATA_PATH, 'MOT20_ext/test/MOT20-03/'), transform=transform, **extra_parameters)
+        dataset05 = MOT20ExtDataset(
+            join(DATA_PATH, 'MOT20_ext/test/MOT20-05/'), transform=transform, **extra_parameters)
         return ConcatDataset([dataset01, dataset02, dataset03, dataset05])
 
 
