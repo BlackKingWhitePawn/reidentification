@@ -253,6 +253,7 @@ def train_siamese(
                 dt = datetime.now()
                 torch.save({
                     'epoch': epoch,
+                    'threshold': threshold,
                     'model_state_dict': model.state_dict(),
                     'optimizer_state_dict': optimizer.state_dict(),
                     'loss': epoch_loss,
@@ -294,6 +295,8 @@ def test_siamese(
     Возвращает таплы с предиктом и истиным значением"""
     test_distances = []
     model = model.to(device)
+    # переключить в eval режим
+    model.eval()
     for x1, x2, y in tqdm(test_loader):
         x1, x2, y = x1.to(device), x2.to(device), y.to(device)
         # нам не нужно считать градиент для предсказания
