@@ -219,7 +219,7 @@ def get_experiments() -> pd.DataFrame:
     return pd.read_csv(file_path)
 
 
-def get_model(df: pd.DataFrame):
+def get_model(df: pd.DataFrame, device='cpu'):
     """Возвращает загруженную модель
     ### Parameters:
      - df: DataFrame - таблица с данными о моделями. Ожидается таблица с одной строкой, берется строка по индексу 0
@@ -227,7 +227,7 @@ def get_model(df: pd.DataFrame):
     data = df.iloc[0]
     model = deepcopy(models_list[data['model_name']])
     name = f'{data["model_name"]}_{datetime.strptime(data["datetime"], "%Y-%m-%d %H:%M:%S.%f").strftime("%d.%m_%H:%M")}.pth'
-    state_dict = torch.load(f=f'models/{name}')
+    state_dict = torch.load(f=f'models/{name}', map_location=device)
     model.load_state_dict(state_dict=state_dict['model_state_dict'])
     return model
 
