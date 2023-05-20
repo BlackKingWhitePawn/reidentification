@@ -1,5 +1,6 @@
 dataset_config,dataset,dataset_use,train_proportion,val_proportion,test_proportion,batch_size,extra_parameters
 mot20_ext-v1a,mot20_ext,2e-05,0.7,0.1,0.2,1,visibility_threshold=0.9;negative_proportion=0.4
 mot20_ext-v1c,mot20_ext,0.01,0.15,0.2,,16,visibility_threshold=1;negative_proportion=0.5;frame_distance=0
-mot20_ext-test-v1,mot20_ext_test,0.01,1,0,0,1,visibility_threshold=1;negative_proportion=0.5;frame_distance=0
-mot20_ext-test-v2,mot20_ext_test,0.1,1,0,0,1,visibility_threshold=1;negative_proportion=0.5;frame_distance=0
+mot20_ext-test-v1,mot20_ext_test,0.01,1.0,0.0,0.0,1,visibility_threshold=1;negative_proportion=0.5;frame_distance=0
+mot20_ext-test-v2,mot20_ext_test,0.1,1.0,0.0,0.0,1,visibility_threshold=1;negative_proportion=0.5;frame_distance=0
+mot20_ext-v1d,mot20_ext,0.01,0.8,0.2,,16,visibility_threshold=1;negative_proportion=0.5;frame_distance=0

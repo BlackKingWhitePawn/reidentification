@@ -35,9 +35,9 @@
 
 from .loader import CONFIGS, get_dataset, get_loaders
 from .loss import ContrastiveLoss
-from .train import fit, train_siamese
+from .train import fit, train_siamese, _get_loss_name
 from .utils import (display_batch, display_images, get_config, get_statistics,
-                    save_train_results, get_experiments)
+                    save_train_results, get_experiments, )
 
 __all__ = [
     CONFIGS,
@@ -50,6 +50,7 @@ __all__ = [
     get_loaders,
     get_statistics,
     save_train_results,
+    _get_loss_name,
     train_siamese,
     get_experiments
 ]
