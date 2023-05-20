@@ -2,6 +2,7 @@ import sys
 from datetime import datetime
 
 import numpy as np
+import pandas as pd
 import torch
 import torch.nn as nn
 from torch.optim import Optimizer
@@ -141,6 +142,12 @@ def _get_loss_name(criterion) -> str:
     return str(criterion)[:-2]
 
 
+# def get_val_acc_and_threshold(distance, y):
+#     a, b = torch.tensor(np.asarray(d)), torch.tensor(np.asarray(y))
+#     a = a.reshape(-1)
+#     predictions = torch.hstack([predictions, torch.vstack([a, b])])
+
+
 def train_siamese(
     model: torch.nn.Module,
     train_loader: DataLoader,
@@ -149,7 +156,7 @@ def train_siamese(
     lr: float,
     criterion,
     epoch_count: int,
-    threshold: float,
+    # threshold: float,
     scheduler: None = None,
     device: torch.device = torch.device('cpu'),
     config: dict = None,
@@ -175,6 +182,7 @@ def train_siamese(
     accuracies_val = []
     best_val_accuracy = 0
     best_val_loss = 1e10
+    thresholds = []
     dt = None
 
     for epoch in range(epoch_count):
@@ -190,8 +198,8 @@ def train_siamese(
                 model.eval()
 
             running_loss = 0.
-            running_acc = 0.
 
+            predictions = torch.tensor([[], []])
             for (x1, x2, y) in tqdm(dataloader):
                 x1, x2, y = x1.to(device), x2.to(device), y.to(device)
                 optimizer.zero_grad()
@@ -204,20 +212,39 @@ def train_siamese(
                         optimizer.step()
 
                 running_loss += loss.item()
-                running_acc += get_distance_accuracy(
-                    distance.clone(), y, threshold)
+                if (phase == 'val'):
+                    # батч с предсказанием сохраняется
+                    d = distance.clone().cpu()
+                    yy = y.clone().cpu()
+                    a, b = torch.tensor(np.asarray(
+                        d)), torch.tensor(np.asarray(yy))
+                    a = a.reshape(-1)
+                    predictions = torch.hstack(
+                        [predictions, torch.vstack([a, b])])
+                # running_acc += get_distance_accuracy(
+                #     distance.clone(), y, threshold)
 
             epoch_loss = running_loss / len(dataloader)
-            epoch_acc = running_acc / len(dataloader)
+            # epoch_acc = running_acc / len(dataloader)
             if phase == 'val':
+                df = pd.DataFrame(predictions.T, columns=[
+                                  'predicted', 'actual'])
+                class_zero_val = df[df['actual'] == 0]['predicted']
+                class_ones_val = df[df['actual'] == 1]['predicted']
+                threshold = (class_zero_val.mean() + class_zero_val.mean()) / 2
+                # вычисление аккураси
+                FP = len(class_zero_val[class_zero_val > threshold])
+                FN = len(class_ones_val[class_ones_val < threshold])
+                epoch_acc = 1 - (FP + FN) / \
+                    (len(class_zero_val) + len(class_ones_val))
                 losses_val.append(epoch_loss)
                 accuracies_val.append(epoch_acc)
+                thresholds.append(threshold)
+                print('{} Loss: {:.4f} Acc: {:.4f}'.format(
+                    phase, epoch_loss, epoch_acc), flush=True)
             else:
                 losses_train.append(epoch_loss)
-                accuracies_train.append(epoch_acc)
-
-            print('{} Loss: {:.4f} Acc: {:.4f}'.format(
-                phase, epoch_loss, epoch_acc), flush=True)
+                # accuracies_train.append(epoch_acc)
 
             if phase == 'val' and (best_val_accuracy < epoch_acc
                                    or (best_val_accuracy == epoch_acc and epoch_loss < best_val_loss)):
@@ -246,7 +273,7 @@ def train_siamese(
         step_size=scheduler.step_size if (scheduler) else -1,
         config=config,
         extra_parameters={
-            'threshold': threshold
+            'thresholds': ';'.join(map(str, list(thresholds)))
         },
         train_accuracies=accuracies_train,
         train_losses=losses_train
@@ -256,3 +283,28 @@ def train_siamese(
         'train': (losses_train, accuracies_train),
         'val': (losses_val, accuracies_val)
     }
+
+
+def test_siamese(
+    model: torch.nn.Module,
+    test_loader: DataLoader,
+    device: torch.device = torch.device('cpu'),
+) -> list[tuple[float, float]]:
+    """Проходит сиамской моделью по тестовой выборке.
+    Возвращает таплы с предиктом и истиным значением"""
+    test_distances = []
+    model = model.to(device)
+    for x1, x2, y in tqdm(test_loader):
+        x1, x2, y = x1.to(device), x2.to(device), y.to(device)
+        # нам не нужно считать градиент для предсказания
+        with torch.no_grad():
+            d = model(x1, x2)
+        # убираем из видеопамяти
+        test_distances.append((d.cpu().item(), y.cpu().item()))
+        # удаляем
+        del d
+        del y
+        # очищаем кэш
+        torch.cuda.empty_cache()
+
+    return test_distances

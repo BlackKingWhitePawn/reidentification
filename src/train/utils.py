@@ -230,3 +230,31 @@ def get_model(df: pd.DataFrame):
     state_dict = torch.load(f=f'models/{name}')
     model.load_state_dict(state_dict=state_dict['model_state_dict'])
     return model
+
+
+def draw_reid_predict(predicts: list[tuple[float, float]]):
+    """Отображает распределение предсказанных классов пар объектов"""
+    plt.rcParams['figure.figsize'] = [10, 10]
+    df = pd.DataFrame(predicts, columns=['predicted', 'actual'])
+    class_zero_val = df[df['actual'] == 0]['predicted']
+    class_ones_val = df[df['actual'] == 1]['predicted']
+    fig, ax = plt.subplots(2)
+    class_ones_val.plot(ax=ax[1], linestyle="", marker="o", markersize=1)
+    class_zero_val.plot(ax=ax[0], linestyle="", marker="o", markersize=1)
+    # fig.suptitle('Разброс предсказаний для класса 1')
+    ax[0].set_title('Разброс предсказаний для класса 0')
+    ax[1].set_title('Разброс предсказаний для класса 1')
+
+    plt.xlabel('id объекта')
+    plt.ylabel('предсказанное значение')
+
+
+def get_binary_accuracy(predicts: list[tuple[float, float]], threshold: float) -> float:
+    """Вычисляет значение accuracy для предсказания двух классов используя пороговое значение"""
+    df = pd.DataFrame(predicts, columns=['predicted', 'actual'])
+    class_zero_val = df[df['actual'] == 0]['predicted']
+    class_ones_val = df[df['actual'] == 1]['predicted']
+    FP = len(class_zero_val[class_zero_val > threshold])
+    FN = len(class_ones_val[class_ones_val < threshold])
+    acc = 1 - (FP + FN) / (len(class_zero_val) + len(class_ones_val))
+    return acc
