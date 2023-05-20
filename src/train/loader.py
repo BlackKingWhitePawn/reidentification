@@ -1,4 +1,5 @@
 from os.path import join
+from math import isnan
 
 from torch import Generator
 from torch.utils.data import ConcatDataset, DataLoader, Dataset, random_split
@@ -71,7 +72,7 @@ def get_loaders(config: dict, generator: Generator = None, transform=None) -> tu
         if ('train_proportion' in config) else \
         1 - config['val_proportion'] - config['test_proportion']
     test_proportion = config['test_proportion'] if (
-        'test_proportion' in config) else 1 - config['val_proportion'] - train_proportion
+        'test_proportion' in config and not isnan(float(config['test_proportion']))) else 1 - config['val_proportion'] - train_proportion
     train_set, val_set, test_set = random_split(
         dataset_use, [
             train_proportion,
