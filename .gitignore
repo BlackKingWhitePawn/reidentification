@@ -17,3 +17,9 @@ test.py
 
 # plt images
 test.png
+
+# models
+*.pt
+
+# runs
+runs

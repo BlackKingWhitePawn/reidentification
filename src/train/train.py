@@ -303,7 +303,9 @@ def test_siamese(
         with torch.no_grad():
             d = model(x1, x2)
         # убираем из видеопамяти
-        test_distances.append((d.cpu().item(), y.cpu().item()))
+        d = d if (type(d) == float) else d.cpu().item()
+        y = y if (type(y) == float) else y.cpu().item()
+        test_distances.append((d, y))
         # удаляем
         del d
         del y
