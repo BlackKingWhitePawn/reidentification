@@ -1,27 +1,7 @@
-from json import loads
-from os import listdir
-from os.path import join
-
-import albumentations as A
-import cv2
-import matplotlib.patches as patches
 import matplotlib.pyplot as plt
+import cv2
 import pandas as pd
-import torch
 from deep_sort_realtime.deepsort_tracker import DeepSort
-from torch.utils.data import DataLoader, random_split
-from ultralytics import YOLO
-
-from src.config import (DATA_PATH, MOT20_EXT_FIRST_AXIS_MEAN,
-                        MOT20_EXT_SECOND_AXIS_MEAN)
-from src.tracker import show_detections, show_roi_detection
-from src.train import get_config, get_dataset, test_siamese
-from src.train.utils import (draw_reid_predict, get_binary_accuracy,
-                             get_config, get_experiments, get_model)
-from src.transforms import get_norm_transform, get_resize_transform
-
-path = join(DATA_PATH, 'wisenet_dataset')
-listdir(path)
 
 
 def get_iou(box1, box2):
@@ -39,58 +19,67 @@ def get_iou(box1, box2):
     return S_overlap / S_union
 
 
-def get_model():
-    df = get_experiments().sort_values('best_val_acc', ascending=False)
-    best = df[df['datetime'] == '2023-05-16 21:04:15.317697']
-    model = get_model(best)
-    threshold = 9
-    return model, threshold
-
-
-def get_model_predict(a, b):
-    """Возвращает boolean - являются ли два объекта одинаковыми"""
-    model, threshold = get_model()
-    predict = model(a, b)
-    return predict < threshold
-
-
 def crop_from_frame(frame: cv2.Mat, box: tuple[float, float, float, float]):
     x, y, w, h = box
-    return frame[y:y+h, x:x+w]
+    return frame[int(y):int(y+h), int(x):int(x+w)]
 
 
-def run(camera_captures, camera_calibration):
+def draw_detections(frame, detections):
+    for box in detections:
+        x, y, w, h = box[0]
+        cv2.rectangle(
+            frame, (int(x), int(y)),
+            (int(x + w), int(y + h)), (255, 0, 0), 2
+        )
+
+
+def handle_boxes(boxes):
+    boxes2 = boxes.copy()
+    boxes2['left'] = boxes2['x1']
+    boxes2['top'] = boxes2['y1']
+    boxes2['w'] = boxes2['x2'] - boxes2['x1']
+    boxes2['h'] = boxes2['y2'] - boxes2['y1']
+    # boxes2 = boxes2.drop(labels=['confidence', 'class', 'x2', 'y2', 'x1', 'y1'], axis=1)
+    return list(zip(zip(
+        boxes2['left'].values,
+        boxes2['top'].values,
+        boxes2['w'].values,
+        boxes2['h'].values
+    ), boxes2['confidence'], boxes2['class']))
+
+
+def run(camera_captures, calibration_data, detector, get_model_predict):
     """Запускает отслеживание на перечисленных камерах"""
-    # for cap, calibration, name in camera_data:
-    # cap.release()
-
-    videoset_path = join(path, 'video_sets', 'set_1')
-    videos = list(map(lambda n: (cv2.VideoCapture(
-        join(videoset_path, n)), n), listdir(videoset_path)))
-    videos.sort(key=lambda x: x[1])
     camera_data = list(map(lambda x: (x[0][0], x[1][0], x[1][1].split('.')[
-                       0]), zip(videos, calibration_data)))
-    # camera_data[2][0].read()
-
+                       0]), zip(camera_captures, calibration_data)))
     trackers = {}
+    frame_index = 820
+    # храним текущие кадры
+    current_frames = {}
 
     # создаем трекеры для каждой камеры
     for cap, calibration, name in camera_data:
         trackers[name] = DeepSort(max_age=30)
-
-    frame_index = 0
+        # запсукаем окна
+        # cv2.namedWindow(name)
+        cap.set(cv2.CAP_PROP_POS_FRAMES, frame_index)
 
     while True:
         # словарь текущих детекций для каждой камеры
         detections = {}
+
         # для каждого кадра получаем список детекций и обновляем трекеры
         for cap, calibration, name in camera_data:
             frame = cap.read()[1]
+            current_frames[name] = frame
+
             res = detector.predict(frame, imgsz=1280, classes=[0])
             bbs = handle_boxes(pd.DataFrame(
                 res[0].boxes.data.cpu(),
-                columns=['x1', 'y1', 'x2', 'y2', 'confidence', 'class']
+                columns=['x1', 'y1', 'x2', 'y2', 'confidence', 'class'],
             ))
+            draw_detections(frame, bbs)
+            # cv2.imshow(name, cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
             # сохраненине детекции
             detections[name] = bbs
             # обновление трека сортом
@@ -126,7 +115,10 @@ def run(camera_captures, camera_calibration):
                     # если это детекции с одной камеры - пропускаем
                     if (a_cam == b_cam):
                         continue
-                    get_model_predict(a, b)
+                    img1 = crop_from_frame(current_frames[a_cam], a)
+                    img2 = crop_from_frame(current_frames[b_cam], b)
+                    cv2.waitKey(0)
+                    res = get_model_predict(img1, img2)
                     pass
 
         print(f'frame - {frame_index}')
