@@ -53,9 +53,15 @@ def run(camera_captures, calibration_data, detector, get_model_predict):
     camera_data = list(map(lambda x: (x[0][0], x[1][0], x[1][1].split('.')[
                        0]), zip(camera_captures, calibration_data)))
     trackers = {}
-    frame_index = 820
+    tracks = {}
+    frame_index = 3480
     # храним текущие кадры
     current_frames = {}
+
+    # словарь соответствия id межкамерных треков
+    sync_track_ids = {
+
+    }
 
     # создаем трекеры для каждой камеры
     for cap, calibration, name in camera_data:
@@ -67,10 +73,11 @@ def run(camera_captures, calibration_data, detector, get_model_predict):
     while True:
         # словарь текущих детекций для каждой камеры
         detections = {}
-
+        # videos_end = True
         # для каждого кадра получаем список детекций и обновляем трекеры
         for cap, calibration, name in camera_data:
-            frame = cap.read()[1]
+            _, frame = cap.read()
+            # videos_end = videos_end and flag
             current_frames[name] = frame
 
             res = detector.predict(frame, imgsz=1280, classes=[0])
@@ -83,8 +90,11 @@ def run(camera_captures, calibration_data, detector, get_model_predict):
             # сохраненине детекции
             detections[name] = bbs
             # обновление трека сортом
-            tracks = trackers[name].update_tracks(
+            tracks[name] = trackers[name].update_tracks(
                 raw_detections=bbs, frame=frame)
+
+        # if videos_end:
+        #     return
 
         # создаем словарь всех регионов интереса
         match_roi = {}
@@ -101,7 +111,9 @@ def run(camera_captures, calibration_data, detector, get_model_predict):
                         list(map(float, camera_roi['xywh'])), list(map(float, box)))
                     # сохранили детекции с достаточной iou
                     if (iou > 1e-2):
-                        matched_detection.append((box, name, iou))
+                        track_id = list(
+                            filter(lambda t: t.det_conf == conf, tracks[name]))[0].track_id
+                        matched_detection.append((box, name, iou, track_id))
                 match_roi[camera_roi['represents']] += (matched_detection)
 
         # обходим все детекции и сравниваем каждую с каждой
@@ -110,16 +122,30 @@ def run(camera_captures, calibration_data, detector, get_model_predict):
                 for j in range(i, len(det)):
                     if (i == j):
                         continue
-                    a, a_cam, a_iou = det[i]
-                    b, b_cam, b_iou = det[j]
+                    a, a_cam, a_iou, a_track_id = det[i]
+                    b, b_cam, b_iou, b_track_id = det[j]
                     # если это детекции с одной камеры - пропускаем
                     if (a_cam == b_cam):
                         continue
                     img1 = crop_from_frame(current_frames[a_cam], a)
                     img2 = crop_from_frame(current_frames[b_cam], b)
+                    cv2.imshow('test', cv2.cvtColor(img1, cv2.COLOR_BGR2RGB))
+                    cv2.waitKey(0)
+                    cv2.imshow('test', cv2.cvtColor(img2, cv2.COLOR_BGR2RGB))
                     cv2.waitKey(0)
                     res = get_model_predict(img1, img2)
-                    pass
+                    # обнаружили совпадение
+                    if (res):
+                        # соединяем трекеры - переносим id с первой камеры на вторую
+                        # for track in tracks[b_cam]:
+                        if (not a_cam in sync_track_ids):
+                            sync_track_ids[a_cam] = {}
+                        if (not b_cam in sync_track_ids[a_cam]):
+                            sync_track_ids[a_cam][b_cam] = {}
+                        sync_track_ids[a_cam][b_cam][a_track_id] = b_track_id
+                        # current_track.track_id = f'{a_cam}_{a_track_id}'
+                        #     if track.is_confirmed():
+                        #         track_id = track.track_id
 
         print(f'frame - {frame_index}')
         frame_index += 1
